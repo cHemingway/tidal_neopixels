@@ -28,6 +28,15 @@ class RaveApp(TextApp):
         if self.rainbow_state > NUM_LEDS:
             self.rainbow_state = 0
 
+    def rainbow_slow(self):
+        for i in range(NUM_LEDS):
+            hue = ((i + self.rainbow_state) % NUM_LEDS) / NUM_LEDS
+            self.leds[i] = hsv_to_rgb(hue, 1, self.brightness)
+        self.leds.write()
+        self.rainbow_state += 1
+        if self.rainbow_state > NUM_LEDS:
+            self.rainbow_state = 0
+
     def all_on(self):
         v = int(255 * self.brightness)
         self.leds.fill((v, v, v))
@@ -73,7 +82,7 @@ class RaveApp(TextApp):
 
     def on_start(self):
         super().on_start()
-        self.MODES = [self.rainbow, self.all_on, self.all_off, self.strobe]
+        self.MODES = [self.rainbow, self.rainbow_slow, self.all_on, self.all_off, self.strobe]
         self.rainbow_state = 0
         self.current_mode = 0
         self.brightness = 0.5
@@ -90,6 +99,7 @@ class RaveApp(TextApp):
         self.timer = self.periodic(TICK_MS, self.update_leds)
         # Screen writing needs to be here
         self.window.cls()
+        self.window.println("Solder to J3 Pin 1")
         self.window.println("L/R = Mode")
         self.window.println("U/D = Brightness")
 
