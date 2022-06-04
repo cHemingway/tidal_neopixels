@@ -68,6 +68,7 @@ class RaveApp(TextApp):
 
     def on_deactivate(self):
         super().on_deactivate()
+        self.all_off()
         tidal.led_power_on(False)
         self.timer.cancel()
 
