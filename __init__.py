@@ -5,10 +5,13 @@ from neopixel import NeoPixel
 from app import TextApp
 
 NUM_LEDS = 80
-MAX_BRIGHTNESS = 0.5
+MAX_BRIGHTNESS = 0.7 # From 0 to 1, Adjust this to what your power supply can handle!
 
 TICK_MS = 25
 
+STROBE_HZ = 3 # 180 beats to win it
+STROBE_MS = int((1/STROBE_HZ) * 1000)
+STROBE_TICKS = int(STROBE_MS / TICK_MS + 0.5)
 
 class RaveApp(TextApp):
 
@@ -19,20 +22,35 @@ class RaveApp(TextApp):
     def rainbow(self):
         for i in range(NUM_LEDS):
             hue = ((i + self.rainbow_state) % NUM_LEDS) / NUM_LEDS
-            self.leds[i] = hsv_to_rgb(hue, 1, MAX_BRIGHTNESS)
+            self.leds[i] = hsv_to_rgb(hue, 1, self.brightness)
         self.leds.write()
         self.rainbow_state += 2
         if self.rainbow_state > NUM_LEDS:
             self.rainbow_state = 0
 
     def all_on(self):
-        v = int(255 * MAX_BRIGHTNESS)
+        v = int(255 * self.brightness)
         self.leds.fill((v, v, v))
         self.leds.write()
 
     def all_off(self):
         v = (0, 0, 0)
         self.leds.fill(v)
+        self.leds.write()
+
+    def strobe(self):
+        # Add variables first pass
+        if not hasattr(self, "strobe_counter"):
+            self.strobe_counter = 0
+        
+        self.strobe_counter += 1
+        if self.strobe_counter > STROBE_TICKS:
+            v = int(255 * self.brightness)
+            self.leds.fill((v,v,v))
+            self.strobe_counter = 0
+        else:
+            self.leds.fill((0,0,0))
+        
         self.leds.write()
 
     def setup_leds(self):
@@ -47,13 +65,22 @@ class RaveApp(TextApp):
     def update_leds(self):
         self.MODES[self.current_mode]()
 
+    def brightness_up(self):
+        self.brightness = min(self.brightness+0.1, MAX_BRIGHTNESS)
+
+    def brightness_down(self):
+        self.brightness = max(self.brightness-0.1, 0)
+
     def on_start(self):
         super().on_start()
-        self.MODES = [self.rainbow, self.all_on, self.all_off]
+        self.MODES = [self.rainbow, self.all_on, self.all_off, self.strobe]
         self.rainbow_state = 0
         self.current_mode = 0
+        self.brightness = 0.5
         self.buttons.on_press(tidal.JOY_LEFT, self.next_mode)
         self.buttons.on_press(tidal.JOY_RIGHT, self.next_mode)
+        self.buttons.on_press(tidal.JOY_UP, self.brightness_up)
+        self.buttons.on_press(tidal.JOY_DOWN, self.brightness_down)
 
     def on_activate(self):
         super().on_activate()
